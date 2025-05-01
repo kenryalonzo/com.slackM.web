@@ -1,3 +1,4 @@
+import { upsertStreamUser } from "../lib/stream.js";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
@@ -103,4 +104,52 @@ export function logout(req, res) {
         sameSite: "strict",
     });
     res.status(200).json({ success: true, message: "Logged out successfully" });
+}
+
+export async function onboard(req, res) {
+
+    try {
+        const userId = req.user._id;
+
+        const { fulName, bio, nativeLanguage, learningLanguage, location } = req.body;
+        if (!fulName || !bio || !nativeLanguage || !learningLanguage || !location) {
+            return res.status(400).json({ 
+                message: "All fields are required",
+                missingFields: [
+                    !fulName && "fulName",
+                    !bio && "bio",
+                    !nativeLanguage && "nativeLanguage",
+                    !learningLanguage && "learningLanguage",
+                    !location && "location",
+                ].filter(Boolean),
+            });
+        }
+
+        const updateUser = await User.findByIdAndUpdate(userId, {
+            ...req.body,
+            isOnboarding: true,
+        }, { new: true });
+
+        if (!updateUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        try {
+            await upsertStreamUser(updateUser._id, {
+                name: updateUser.fulName,
+                email: updateUser.email,
+                image: updateUser.profilePicture,
+            });
+            console.log(`Stream user updated successfully after onboarding: ${updateUser.fulName}`);
+        } catch (streamError) {
+            console.error("Error updating Stream user:", streamError.message);
+            return res.status(500).json({ message: "Failed to update Stream user" });
+        }
+        
+        res.status(200).json({ success: true, user: updateUser });
+        // You can add further onboarding logic here if needed
+    } catch (error) {
+        console.log("Error during onboarding controller:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 }
