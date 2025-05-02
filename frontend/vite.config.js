@@ -8,4 +8,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: [
+      'stream-chat-react',
+      '@stream-io/video-react-sdk',
+      'lucide-react'
+    ]
+  }
 })
