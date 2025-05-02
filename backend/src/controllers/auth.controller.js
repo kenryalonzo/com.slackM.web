@@ -135,7 +135,7 @@ export async function onboard(req, res) {
         }
 
         try {
-            await upsertStreamUser(updateUser._id, {
+            await upsertStreamUser(updateUser._id.toString(), { // Fixed to call toString() method
                 name: updateUser.fulName,
                 email: updateUser.email,
                 image: updateUser.profilePicture,
